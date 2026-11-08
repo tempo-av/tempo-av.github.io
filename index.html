@@ -1,0 +1,493 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TEMPO · audiovisual collective</title>
+<meta name="description" content="TEMPO is a multidisciplinary art collective from Milano creating audiovisual installations and performances. Portfolio and electronic press kit 2026.">
+<meta property="og:title" content="TEMPO · audiovisual collective">
+<meta property="og:description" content="Audiovisual installations and performances. Milano, since 2023.">
+<meta property="og:image" content="t/seed.jpg">
+<meta name="theme-color" content="#030304">
+<link rel="icon" href="t/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..800&family=IBM+Plex+Mono:wght@300;400;500&display=swap">
+<style>
+/* Layout: one full-bleed WebGL field; all type floats on it as instrument readouts. Single dark world by design. */
+:root{
+  --void:#030304; --ink:#eeefef; --dim:#8d9096; --faint:#45484e;
+  --display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  --gx:max(16px,env(safe-area-inset-left,0px)); --gxr:max(16px,env(safe-area-inset-right,0px));
+  color-scheme:dark;
+}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{background:var(--void);color:var(--ink);font-family:var(--display);-webkit-font-smoothing:antialiased;touch-action:none;user-select:none;-webkit-user-select:none}
+#gl{position:fixed;inset:0;width:100%;height:100%;display:block;background:var(--void)}
+.mono{font-family:var(--mono);font-size:11px;letter-spacing:.08em;font-variant-numeric:tabular-nums}
+a{color:inherit}
+a:focus-visible,button:focus-visible{outline:1px solid var(--ink);outline-offset:3px}
+
+/* HUD */
+.vig{position:fixed;inset:auto 0 0 0;height:60%;pointer-events:none;background:linear-gradient(to top,rgba(3,3,4,.78),rgba(3,3,4,0))}
+.hud,.rail{transition:opacity .8s}
+body:not(.in) .hud,body:not(.in) .rail{opacity:0}
+.hud{position:fixed;inset:0;pointer-events:none;padding:calc(env(safe-area-inset-top,0px) + 16px) var(--gxr) calc(env(safe-area-inset-bottom,0px) + 20px) var(--gx);display:flex;flex-direction:column;justify-content:space-between}
+.top{display:flex;justify-content:space-between;align-items:center}
+.top img{width:44px;height:auto;mix-blend-mode:screen}
+.top .idx{color:var(--dim)}
+.rail{position:fixed;right:calc(var(--gxr) - 6px);top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:10px;pointer-events:none}
+.rail i{display:block;width:2px;height:22px;background:var(--faint);position:relative;overflow:hidden}
+.rail i b{position:absolute;left:0;top:0;width:100%;height:0;background:var(--ink)}
+.work{display:grid;gap:10px;max-width:min(560px,86vw)}
+.work .code{color:var(--dim)}
+.work h1{font-stretch:125%;font-weight:200;font-size:clamp(40px,11vw,104px);line-height:.92;margin:0;letter-spacing:.12em;white-space:nowrap}
+.work .kind{color:var(--dim);text-transform:uppercase;letter-spacing:.24em}
+.details{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:6px;min-height:4.8em}
+.details li{font-size:clamp(13px,1.6vw,15px);line-height:1.4;max-width:42ch;opacity:0;transform:translateY(6px);transition:opacity .5s,transform .5s;color:#d5d7da}
+.details li.on{opacity:1;transform:none}
+.sheet{pointer-events:auto;justify-self:start;text-decoration:none;border-bottom:1px solid var(--faint);padding-bottom:2px;color:var(--dim)}
+.sheet:hover{color:var(--ink)}
+.meter{display:flex;gap:16px;color:var(--dim);flex-wrap:wrap}
+.push{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 22px);transform:translateX(-50%);display:grid;justify-items:center;gap:8px;opacity:0;transition:opacity .25s;pointer-events:none;color:var(--ink)}
+.push .bar{width:120px;height:1px;background:var(--faint);position:relative}
+.push .bar b{position:absolute;left:0;top:-1px;height:3px;width:0;background:var(--ink)}
+.hint{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 26px);transform:translateX(-50%);color:var(--dim);transition:opacity .6s;pointer-events:none;text-transform:uppercase;letter-spacing:.3em}
+
+/* BIO */
+.bio{position:fixed;inset:0;display:grid;place-content:center;justify-items:center;text-align:center;gap:18px;pointer-events:none;opacity:0;padding-inline:var(--gx) var(--gxr)}
+.bio h2{font-stretch:125%;font-weight:200;font-size:clamp(44px,13vw,150px);letter-spacing:.3em;margin:0 0 0 .3em;line-height:1}
+.bio p{margin:0;font-size:clamp(15px,2.2vw,20px);font-weight:300;max-width:30ch;line-height:1.45;opacity:0;transition:opacity .7s}
+.bio p.on{opacity:1}
+.bio .mono{color:var(--dim);text-transform:uppercase;letter-spacing:.32em}
+
+/* gate */
+.gate{position:fixed;inset:0;z-index:20;display:grid;place-content:center;justify-items:center;gap:28px;background:color-mix(in srgb,var(--void) 72%,transparent);transition:opacity .8s;padding-inline:var(--gx) var(--gxr);text-align:center}
+.gate.off{opacity:0;pointer-events:none}
+.gate h2{font-stretch:125%;font-weight:200;font-size:clamp(44px,12vw,128px);letter-spacing:.3em;margin:0 0 0 .3em}
+.gate p{margin:0;color:var(--dim);max-width:34ch;line-height:1.5}
+.gate .go{font:inherit;font-family:var(--mono);font-size:12px;letter-spacing:.32em;text-transform:uppercase;color:var(--void);background:var(--ink);border:0;padding:16px 26px;cursor:pointer}
+.gate .mute{font:inherit;font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;background:none;border:0;color:var(--dim);cursor:pointer;text-decoration:underline;text-underline-offset:4px}
+.sound{position:fixed;top:calc(env(safe-area-inset-top,0px) + 14px);left:50%;transform:translateX(-50%);z-index:5;font:inherit;font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;background:none;border:1px solid var(--faint);color:var(--dim);padding:6px 10px;cursor:pointer}
+
+/* end panel */
+.end{position:fixed;inset:0;z-index:6;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y;opacity:0;pointer-events:none;transition:opacity .6s;background:linear-gradient(to bottom,transparent,color-mix(in srgb,var(--void) 88%,transparent) 30vh);user-select:text;-webkit-user-select:text}
+.end.on{opacity:1;pointer-events:auto}
+.end-in{max-width:760px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 34vh) var(--gxr) calc(env(safe-area-inset-bottom,0px) + 80px) var(--gx);display:grid;gap:28px}
+.end h2{font-stretch:125%;font-weight:200;font-size:clamp(36px,9vw,84px);letter-spacing:.3em;margin:0;line-height:1}
+.end p{margin:0;font-size:17px;line-height:1.6;font-weight:300;color:#d5d7da;max-width:60ch}
+.end p.lead{font-size:clamp(20px,3vw,26px);line-height:1.38;color:var(--ink)}
+.end .label{color:var(--dim);text-transform:uppercase;letter-spacing:.32em;margin-top:24px}
+.end ul{list-style:none;margin:0;padding:0;border-top:1px solid #1f2125}
+.end li a,.end li>span{display:flex;justify-content:space-between;gap:16px;padding:14px 0;border-bottom:1px solid #1f2125;text-decoration:none}
+.end li a span:first-child{font-stretch:125%;letter-spacing:.18em}
+.end li a:hover span:first-child{color:#fff}
+.end li span.d{color:var(--dim)}
+.ph{font-family:var(--mono);font-size:.82em;color:var(--dim);border:1px dashed var(--faint);padding:0 .4em}
+.ph::before{content:"[ "}.ph::after{content:" ]"}
+.back{font:inherit;font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;background:none;border:1px solid var(--faint);color:var(--dim);padding:10px 14px;cursor:pointer;justify-self:start}
+.nogl{position:fixed;inset:0;display:grid;place-content:center;padding-inline:var(--gx) var(--gxr);color:var(--dim);text-align:center}
+</style>
+</head>
+<body>
+
+<canvas id="gl" aria-hidden="true"></canvas>
+
+<div class="vig" aria-hidden="true"></div>
+<div class="hud" aria-live="polite">
+  <div class="top"><img src="t/logo.png" alt="TEMPO"><span class="idx mono" id="idx">01 / 05</span></div>
+  <div class="work" id="work">
+    <span class="code mono" id="w-code"></span>
+    <h1 id="w-title"></h1>
+    <span class="kind mono" id="w-kind"></span>
+    <ul class="details" id="w-det"></ul>
+    <div class="meter mono"><span id="m-z">zoom ×1.0</span><span id="m-d">depth 000</span><span id="m-p">particles 0</span></div>
+    <a class="sheet mono" id="w-link" href="#" target="_blank">Full sheet (PDF) →</a>
+  </div>
+</div>
+<div class="rail" id="rail" aria-hidden="true"></div>
+<div class="push mono" id="push" aria-hidden="true"><span>keep pushing</span><div class="bar"><b id="push-b"></b></div></div>
+<div class="hint mono" id="hint">scroll to dive</div>
+
+<div class="bio" id="bio">
+  <span class="mono">audiovisual collective</span>
+  <h2>TEMPO</h2>
+  <p data-at=".15">Milano. Since 2023.</p>
+  <p data-at=".4">Installations and performances where image and sound merge.</p>
+  <p data-at=".65" class="mono">light · sound · space · time</p>
+</div>
+
+<section class="end" id="end" aria-label="About TEMPO">
+  <div class="end-in">
+    <span class="label mono">The concept</span>
+    <h2>TEMPO</h2>
+    <p class="lead">Founded in 2023, TEMPO is a multidisciplinary art collective involved in the creation of audiovisual installations and performances, merging the realms of image and sound to produce enhanced, cutting-edge and unique experiences.</p>
+    <p>TEMPO stands as a collective force, inspired by the common goal of exploring innovative connections between light, sound, space and time. As architects of experiences, audiovisual sculptors and creative engineers our work lies on the values of experimentation, shared knowledge and collective thinking, leveraging creativity and technology.</p>
+    <span class="label mono">Works</span>
+    <ul id="end-works"></ul>
+    <span class="label mono">Members</span>
+    <ul>
+      <li><a href="https://www.instagram.com/jit.wav_/" target="_blank" rel="noopener"><span>Pier Carlo Adani</span><span class="d mono">@jit.wav_</span></a></li>
+      <li><a href="https://www.instagram.com/forgesx/" target="_blank" rel="noopener"><span>Lorenzo Forges Davanzati</span><span class="d mono">@forgesx</span></a></li>
+      <li><a href="https://www.instagram.com/fedecavalli/" target="_blank" rel="noopener"><span>Federico Cavalli</span><span class="d mono">@fedecavalli</span></a></li>
+      <li><a href="https://www.instagram.com/lucarigat/" target="_blank" rel="noopener"><span>Luca Rigat</span><span class="d mono">@lucarigat</span></a></li>
+    </ul>
+    <span class="label mono">Press kit</span>
+    <ul>
+      <li><a href="TEMPO_Portfolio_2026.pdf" target="_blank"><span>Portfolio · EPK 2026</span><span class="d mono">PDF ↓</span></a></li>
+      <li><span><span>Booking</span><span class="ph">booking e-mail</span></span></li>
+    </ul>
+    <button class="back" id="restart" type="button">↑ Dive again</button>
+  </div>
+</section>
+
+<button class="sound" id="sound" type="button" hidden>sound on</button>
+
+<div class="gate" id="gate">
+  <h2>TEMPO</h2>
+  <p>Scroll or swipe to dive into each work. Sound rises as you go deeper.</p>
+  <button class="go" id="go" type="button">Enter with sound</button>
+  <button class="mute" id="go-mute" type="button">enter without sound</button>
+</div>
+
+<script>
+(() => {
+const SECTIONS = [
+  { id:'seed', code:'TMP·26·01', title:'SEED', kind:'A/V installation · 2026', image:'t/seed.jpg', audio:'a/seed.mp3', link:'TEMPO_Portfolio_2026.pdf#page=4',
+    details:['Organic and artificial, nature and urban.','What is sown shapes what emerges.','NAMA · Nuovo Anfiteatro Martesana, Milano.'] },
+  { id:'traya', code:'TMP·24·02', title:'TRAYA', kind:'Generative installation · 2024', video:'v/traya.mp4', poster:'t/traya-poster.jpg', audio:'a/traya.mp3', link:'TEMPO_Portfolio_2026.pdf#page=9',
+    details:['Three movements: DEVA, ARDHA, BHU.','A self-evolving sound system drives the image in real time.','Each frequency shapes the image; each image echoes the sound.'] },
+  { id:'exsa', code:'TMP·23·01', title:'EXSA', kind:'Generative installation · 2023', image:'t/exsa.jpg', audio:'a/exsa.mp3', link:'TEMPO_Portfolio_2026.pdf#page=10',
+    details:["Former Sant'Agata prison, Bergamo.",'Archival photographs dissolve through a stigmergy shader.','In collaboration with Evolvere.'] },
+  { id:'bio', bio:true, video:'v/bio.mp4', audio:'a/bio.mp3', gain:.7 },
+  { id:'linea', code:'TMP·24·01', title:'LINEA', kind:'A/V installation · 2024', image:'t/linea.jpg', audio:'a/linea.mp3', link:'TEMPO_Portfolio_2026.pdf#page=7',
+    details:['Everyone is connected.','How digital information binds people into a collective consciousness.','Arca, Milano · Rocca Brivio, with Fluids Diffusion.'] },
+  { id:'immersione', code:'TMP·26·02', title:'IMMERSIONE', kind:'Projection mapping · 2026', image:'t/immersione.jpg', link:'TEMPO_Portfolio_2026.pdf#page=6',
+    details:['Light mapped onto a living tree.','For the music video of Immersione by Scintilla.','Video production: Plasma. Videomapping: TEMPO.'] },
+  { id:'s80', code:'TMP·25·01', title:'SECTION 80', kind:'Custom software · 2025', image:'t/s80.jpg', audio:'a/s80.mp3', link:'TEMPO_Portfolio_2026.pdf#page=11',
+    details:['A video mixer for a listening bar in Milano.','Audio-reactive visuals, always in sync with the music.','No operator needed.'] },
+  { id:'club', code:'TMP·LIVE', title:'CLUB', kind:'Live A/V · since 2023', image:'t/club.jpg', audio:'a/club.mp3', link:'TEMPO_Portfolio_2026.pdf#page=12',
+    details:['Real-time lightscapes for clubs and raves.','Several generative visuals mixed live from one Max/MSP patch.','Melusina, Luxembourg · The Steel Yard, London.'] },
+  { id:'end', end:true },
+];
+const END = SECTIONS.length - 1;
+const WORKS = SECTIONS.filter(s => s.title);
+const HARD0 = .8, HARD1 = .9;
+const UNDER = .42;                       // opacity of the original colour picture under the particles            // resistance zone inside each section
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = id => document.getElementById(id);
+
+/* ---------- end panel works list ---------- */
+$('end-works').innerHTML = WORKS.map(w => `<li><a href="${w.link}" target="_blank"><span>${w.title}</span><span class="d mono">${w.code} →</span></a></li>`).join('') +
+  `<li><a href="TEMPO_Portfolio_2026.pdf#page=14" target="_blank"><span>RE-GEN</span><span class="d mono">TMP·EDU·01 →</span></a></li>`;
+$('rail').innerHTML = SECTIONS.slice(0, END).map(() => '<i><b></b></i>').join('');
+const railB = [...$('rail').querySelectorAll('b')];
+
+/* ---------- WebGL ---------- */
+const cv = $('gl');
+const gl = cv.getContext('webgl', { antialias:false, premultipliedAlpha:false, alpha:false });
+if (!gl || gl.getParameter(gl.MAX_VERTEX_TEXTURE_IMAGE_UNITS) < 1) {
+  document.body.insertAdjacentHTML('beforeend', '<div class="nogl mono">This browser cannot run the WebGL dive. Try a recent Chrome, Safari or Firefox.</div>');
+}
+const VS = `
+attribute vec2 aGrid; attribute float aRand;
+uniform sampler2D uTex; uniform vec4 uWin; uniform vec2 uView; uniform float uZoom, uTime, uInvert, uDepth, uPt, uDist, uYaw, uPitch, uDust;
+varying float vL; varying float vA;
+vec3 rot(vec3 p){ float cy=cos(uYaw), sy=sin(uYaw), cp=cos(uPitch), sp=sin(uPitch);
+  p = vec3(cy*p.x + sy*p.z, p.y, -sy*p.x + cy*p.z); return vec3(p.x, cp*p.y - sp*p.z, sp*p.y + cp*p.z); }
+void main(){
+  vec2 jit = (vec2(fract(aRand*91.7), fract(aRand*47.3)) - .5) / 220.0;
+  vec2 g = aGrid + jit;
+  vec2 uv = uWin.xy + g * uWin.zw;
+  vec3 c = texture2D(uTex, uv).rgb;
+  float l = dot(c, vec3(.3,.59,.11));
+  l = mix(l, 1.0 - l, uInvert);
+  l = pow(smoothstep(.02, .8, l), .7);
+  float t = uTime;
+  vec3 p = vec3((g.x - .5) * uView.x, (.5 - g.y) * uView.y, 0.0);
+  float n = sin(g.x*23.0 + t*.7 + aRand*6.28) * cos(g.y*19.0 - t*.5);
+  p.z = l * uDepth + n * .03 * (.3 + uZoom*2.5) * uDepth * 4.0;
+  p.xy += vec2(cos(aRand*40.0 + t*.4), sin(aRand*31.0 + t*.35)) * .004 * (1.0 + uZoom*6.0);
+  float dust = step(aRand, uDust);
+  if (dust > .5) {                       // flying dust: gives the sense of travelling forward
+    float f = fract(aRand*13.7 + uZoom*2.2 + t*.015);
+    p.z = mix(-1.5, uDist*.92, f);
+    l = .18 * smoothstep(0.0,.3,f) * (1.0 - smoothstep(.85,1.0,f));
+  }
+  p = rot(p);
+  float zc = uDist - p.z;
+  vec4 clip = vec4(p.xy / zc * uDist, 0.0, 1.0);
+  clip.xy *= vec2(2.0/uView.x, 2.0/uView.y);
+  gl_Position = clip;
+  float s = uPt * (uDist / max(zc, .05));
+  gl_PointSize = (l < .02) ? 0.0 : clamp(s * (.5 + l), 1.0, 48.0);
+  vL = l; vA = 1.0;
+}`;
+const FS = `precision mediump float; varying float vL; varying float vA; uniform float uAlpha, uGain;
+void main(){ vec2 d = gl_PointCoord - .5; float r = dot(d,d); if (r > .25) discard;
+  float a = smoothstep(.25, .0, r); gl_FragColor = vec4(vec3(vL * a * uAlpha * uGain), 1.0); }`;
+let prog, U = {}, buf, count = 0;
+function sh(type, src){ const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw gl.getShaderInfoLog(s); return s; }
+if (gl) {
+  prog = gl.createProgram(); gl.attachShader(prog, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(prog, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(prog); gl.useProgram(prog);
+  ['uTex','uWin','uView','uZoom','uTime','uInvert','uDepth','uPt','uDist','uYaw','uPitch','uAlpha','uGain','uDust'].forEach(k => U[k] = gl.getUniformLocation(prog, k));
+  gl.enable(gl.BLEND); gl.blendFunc(gl.ONE, gl.ONE);
+}
+/* underlay: the original picture, in colour, faded under the particle field */
+const UVS = `attribute vec2 aQ; uniform vec4 uWin; uniform vec2 uView; uniform float uDist, uYaw, uPitch; varying vec2 vUv;
+vec3 rot(vec3 p){ float cy=cos(uYaw), sy=sin(uYaw), cp=cos(uPitch), sp=sin(uPitch);
+  p = vec3(cy*p.x + sy*p.z, p.y, -sy*p.x + cy*p.z); return vec3(p.x, cp*p.y - sp*p.z, sp*p.y + cp*p.z); }
+void main(){ vUv = uWin.xy + aQ * uWin.zw;
+  vec3 p = rot(vec3((aQ.x - .5) * uView.x * 1.04, (.5 - aQ.y) * uView.y * 1.04, -.02));
+  float zc = uDist - p.z; vec4 c = vec4(p.xy / zc * uDist, 0.0, 1.0); c.xy *= vec2(2.0/uView.x, 2.0/uView.y); gl_Position = c; }`;
+const UFS = `precision mediump float; varying vec2 vUv; uniform sampler2D uTex; uniform float uAlpha;
+void main(){ vec3 c = texture2D(uTex, vUv).rgb; vec2 e = smoothstep(0.0, .06, vUv) * smoothstep(1.0, .94, vUv);
+  gl_FragColor = vec4(c, uAlpha * e.x * e.y); }`;
+let uprog, UU = {}, qbuf;
+if (gl) {
+  uprog = gl.createProgram(); gl.attachShader(uprog, sh(gl.VERTEX_SHADER, UVS)); gl.attachShader(uprog, sh(gl.FRAGMENT_SHADER, UFS)); gl.linkProgram(uprog);
+  ['uTex','uWin','uView','uDist','uYaw','uPitch','uAlpha'].forEach(k => UU[k] = gl.getUniformLocation(uprog, k));
+  qbuf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, qbuf);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([0,0, 1,0, 0,1, 0,1, 1,0, 1,1]), gl.STATIC_DRAW);
+}
+let pA = { grid:-1, rand:-1 }, qA = -1;
+function makeGrid(){
+  const mobile = Math.min(innerWidth, innerHeight) < 700;
+  const total = mobile ? 42000 : 90000, asp = innerWidth / innerHeight;
+  const gw = Math.round(Math.sqrt(total * asp)), gh = Math.round(total / gw);
+  const d = new Float32Array(gw * gh * 3); let i = 0;
+  for (let y = 0; y < gh; y++) for (let x = 0; x < gw; x++) { d[i++] = (x + .5) / gw; d[i++] = (y + .5) / gh; d[i++] = Math.random(); }
+  count = gw * gh;
+  if (!buf) buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, d, gl.STATIC_DRAW);
+  const a = gl.getAttribLocation(prog, 'aGrid'), r = gl.getAttribLocation(prog, 'aRand');
+  pA = { grid:a, rand:r };
+}
+function bindParticles(){ gl.useProgram(prog); if (qA >= 0) gl.disableVertexAttribArray(qA); gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.enableVertexAttribArray(pA.grid); gl.vertexAttribPointer(pA.grid, 2, gl.FLOAT, false, 12, 0);
+  gl.enableVertexAttribArray(pA.rand); gl.vertexAttribPointer(pA.rand, 1, gl.FLOAT, false, 12, 8); }
+function bindQuad(){ gl.useProgram(uprog); gl.disableVertexAttribArray(pA.rand); if (qA < 0) qA = gl.getAttribLocation(uprog, 'aQ');
+  gl.bindBuffer(gl.ARRAY_BUFFER, qbuf); gl.enableVertexAttribArray(qA); gl.vertexAttribPointer(qA, 2, gl.FLOAT, false, 0, 0); }
+let dpr = 1;
+function resize(){
+  dpr = Math.min(devicePixelRatio || 1, 2);
+  cv.width = Math.round(innerWidth * dpr); cv.height = Math.round(innerHeight * dpr);
+  if (gl) { gl.viewport(0, 0, cv.width, cv.height); makeGrid(); }
+}
+addEventListener('resize', resize);
+
+/* ---------- textures ---------- */
+function tex(){ const t = gl.createTexture(); gl.bindTexture(gl.TEXTURE_2D, t);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([0,0,0,255])); return t; }
+function focusOf(img, s){                 // brightness-weighted centroid → where the dive heads
+  try { const c = document.createElement('canvas'); c.width = c.height = 48; const x = c.getContext('2d'); x.drawImage(img, 0, 0, 48, 48);
+    const d = x.getImageData(0, 0, 48, 48).data; let sx = 0, sy = 0, sw = 0;
+    for (let i = 0; i < 48*48; i++) { let l = (d[i*4]*.3 + d[i*4+1]*.59 + d[i*4+2]*.11) / 255; if (s.invert) l = 1 - l; const w = l*l*l; sx += w*(i%48); sy += w*Math.floor(i/48); sw += w; }
+    if (sw > 0) s.focus = [ .5 + ((sx/sw)/48 - .5)*.7, .5 + ((sy/sw)/48 - .5)*.7 ]; } catch(e) {}
+}
+SECTIONS.forEach(s => {
+  if (s.end || !gl) return;
+  s.focus = [.5, .5]; s.aspect = 16/9; s.tex = tex();
+  if (s.video) {
+    const v = document.createElement('video'); Object.assign(v, { src:s.video, muted:true, loop:true, playsInline:true, preload:'auto', crossOrigin:'anonymous' });
+    v.setAttribute('playsinline', ''); v.setAttribute('muted', ''); s.el = v;
+    v.addEventListener('loadedmetadata', () => { s.aspect = v.videoWidth / v.videoHeight; });
+    v.play().catch(() => {});
+  } else {
+    const im = new Image(); im.onload = () => { s.aspect = im.width / im.height; gl.bindTexture(gl.TEXTURE_2D, s.tex);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, im); s.ready = true; focusOf(im, s); }; im.src = s.image;
+  }
+});
+function track(s, now){ if (s.el && s.el.readyState >= 2 && (!s.ft || now - s.ft > 1500)) { s.ft = now; const f0 = s.focus; focusOf(s.el, s); s.focusT = s.focus; s.focus = f0; }
+  if (s.focusT) s.focus = [lerp(s.focus[0], s.focusT[0], .01), lerp(s.focus[1], s.focusT[1], .01)]; }
+function upload(s){ if (s.el && s.el.readyState >= 2) { gl.bindTexture(gl.TEXTURE_2D, s.tex); gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, s.el); s.ready = true; } }
+
+/* ---------- scroll model ---------- */
+let target = 0, pos = 0, lastPush = 0, vel = 0, entered = false;
+const lerp = (a, b, t) => a + (b - a) * t, clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const easeIO = t => t < .5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
+function push(d){
+  if (!entered) return;
+  const k = Math.floor(target), l = target - k;
+  if (d > 0 && k < END && l >= HARD0 && l < HARD1) d *= .11;   // the hard part
+  const before = target;
+  target = clamp(target + d, 0, END);
+  if (Math.floor(before) === Math.floor(target) && before - Math.floor(before) < HARD1 && target - Math.floor(target) >= HARD1) { try { navigator.vibrate && navigator.vibrate(18); } catch(e) {} }
+  lastPush = performance.now();
+}
+const endEl = $('end');
+addEventListener('wheel', e => {
+  if (endEl.classList.contains('on') && !(e.deltaY < 0 && endEl.scrollTop <= 0)) return;
+  e.preventDefault();
+  const px = e.deltaMode === 1 ? e.deltaY * 32 : e.deltaMode === 2 ? e.deltaY * innerHeight : e.deltaY;
+  push(clamp(px, -160, 160) / 2600);
+}, { passive:false });
+let ty = null, tlast = 0;
+addEventListener('touchstart', e => { ty = e.touches[0].clientY; tlast = performance.now(); vel = 0; }, { passive:true });
+addEventListener('touchmove', e => {
+  if (ty === null) return;
+  const y = e.touches[0].clientY, dy = ty - y; ty = y;
+  if (endEl.classList.contains('on') && !(dy < 0 && endEl.scrollTop <= 0)) return;
+  e.cancelable && e.preventDefault();
+  const now = performance.now(), d = dy / innerHeight * .55; vel = d / Math.max(8, now - tlast) * 16; tlast = now; push(d);
+}, { passive:false });
+addEventListener('touchend', () => { ty = null; }, { passive:true });
+addEventListener('keydown', e => {
+  if (['ArrowDown','PageDown',' '].includes(e.key)) { e.preventDefault(); push(.06); }
+  if (['ArrowUp','PageUp'].includes(e.key)) { e.preventDefault(); push(-.06); }
+});
+let yawT = 0, pitchT = 0;
+addEventListener('pointermove', e => { yawT = (e.clientX / innerWidth - .5) * .5; pitchT = (e.clientY / innerHeight - .5) * .35; });
+$('restart').addEventListener('click', () => { target = 0; endEl.scrollTop = 0; });
+
+/* ---------- audio ---------- */
+let ac = null, master = null, muted = false;
+async function startAudio(){
+  try {
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    master = ac.createGain(); master.gain.value = 1; master.connect(ac.destination);
+    SECTIONS.forEach(s => {
+      if (!s.audio) return;
+      s.gainN = ac.createGain(); s.gainN.gain.value = 0;
+      s.lp = ac.createBiquadFilter(); s.lp.type = 'lowpass'; s.lp.frequency.value = 400; s.lp.Q.value = .4;
+      s.lp.connect(s.gainN); s.gainN.connect(master);
+      fetch(s.audio).then(r => r.arrayBuffer()).then(b => new Promise((ok, no) => ac.decodeAudioData(b, ok, no))).then(buf => {
+        const src = ac.createBufferSource(); src.buffer = buf; src.loop = true; src.connect(s.lp); src.start(0, Math.random() * buf.duration * .5);
+      }).catch(() => {});
+    });
+    if (ac.state === 'suspended') await ac.resume();
+  } catch (e) { ac = null; }
+}
+function setSound(on){ muted = !on; if (master) master.gain.setTargetAtTime(on ? 1 : 0, ac.currentTime, .1); $('sound').textContent = on ? 'sound on' : 'sound off'; }
+$('sound').addEventListener('click', async () => { if (!ac) { await startAudio(); setSound(true); } else setSound(muted); });
+function enter(withSound){
+  entered = true; document.body.classList.add('in'); $('gate').classList.add('off'); $('sound').hidden = false;
+  SECTIONS.forEach(s => s.el && s.el.play().catch(() => {}));
+  if (withSound) startAudio().then(() => setSound(true)); else setSound(false);
+}
+$('go').addEventListener('click', () => enter(true));
+$('go-mute').addEventListener('click', () => enter(false));
+
+/* ---------- per-section state from scroll position ---------- */
+function stateOf(i, p){                    // returns {alpha, zoom} of section i at global position p
+  const l = p - i;
+  if (l >= 0 && l < 1) {
+    if (l < HARD0) return { alpha:1, zoom: easeIO(l / HARD0) };
+    if (l < HARD1) return { alpha:1, zoom: 1 + (l - HARD0) / (HARD1 - HARD0) * .06, strain:(l - HARD0) / (HARD1 - HARD0) };
+    const a = (l - HARD1) / (1 - HARD1);
+    return { alpha: 1 - a, zoom: 1.06 + a * .5 };
+  }
+  if (l < 0 && l >= -(1 - HARD1)) return { alpha: (l + (1 - HARD1)) / (1 - HARD1), zoom: 0 };   // fading in
+  return null;
+}
+
+/* ---------- HUD ---------- */
+let shownWork = null;
+function hud(p, now){
+  const k = Math.min(Math.floor(p + (1 - HARD1) * .5), END);
+  const cur = SECTIONS[clamp(Math.floor(p), 0, END)];
+  const st = stateOf(Math.floor(p), p) || { alpha:1, zoom:0 };
+  const nearNext = p - Math.floor(p) >= HARD1 + (1 - HARD1) * .5;
+  const s = SECTIONS[clamp(nearNext ? Math.floor(p) + 1 : Math.floor(p), 0, END)];
+  const workEl = $('work');
+  if (s.title) {
+    if (shownWork !== s) {
+      shownWork = s;
+      $('w-title').style.fontSize = s.title.length > 6 ? `clamp(26px, ${66 / s.title.length}vw, 92px)` : ''; $('w-code').textContent = s.code; $('w-title').textContent = s.title.split('').join(' ').replace(/   /g, '  '); $('w-kind').textContent = s.kind;
+      $('w-det').innerHTML = s.details.map(d => `<li>${d}</li>`).join(''); $('w-link').href = s.link;
+      $('idx').textContent = String(WORKS.indexOf(s) + 1).padStart(2, '0') + ' / ' + String(WORKS.length).padStart(2, '0');
+    }
+    const z = nearNext ? 0 : st.zoom;
+    [...$('w-det').children].forEach((li, j) => li.classList.toggle('on', z > .22 + j * .25));
+    const sa = stateOf(SECTIONS.indexOf(s), p); workEl.style.opacity = sa ? Math.min(1, sa.alpha * 1.3) : 0;
+    $('m-z').textContent = 'zoom ×' + (1 / Math.pow(.11, Math.min(z, 1.2))).toFixed(1);
+    $('m-d').textContent = 'depth ' + String(Math.round(z * 100)).padStart(3, '0');
+    $('m-p').textContent = 'particles ' + count.toLocaleString('en');
+  } else workEl.style.opacity = 0;
+  const bi = SECTIONS.findIndex(x => x.bio), bs = stateOf(bi, p);
+  $('bio').style.opacity = bs ? bs.alpha : 0;
+  $('bio').querySelectorAll('p').forEach(el => el.classList.toggle('on', !!bs && bs.zoom > +el.dataset.at));
+  const strain = st.strain || 0;
+  $('push').style.opacity = st.strain !== undefined && !cur.end ? 1 : 0; $('push-b').style.width = (strain * 100) + '%';
+  $('hint').style.opacity = entered && p < .04 ? 1 : 0;
+  railB.forEach((b, j) => b.style.height = (clamp(p - j, 0, 1) * 100) + '%');
+  endEl.classList.toggle('on', p > END - .08);
+}
+
+/* ---------- render ---------- */
+const t0 = performance.now(); let yaw = 0, pitch = 0;
+function drawSection(s, st, time){
+  if (!s.tex || !s.ready) return;
+  const asp = innerWidth / innerHeight, fov = .9, dist = 1 / Math.tan(fov / 2);
+  const viewH = 2, viewW = 2 * asp;
+  // visible part of the texture at zoom 0 (cover fit)
+  let vw = 1, vh = 1; if (s.aspect > asp) vw = asp / s.aspect; else vh = s.aspect / asp;
+  const scale = Math.pow(.11, Math.min(st.zoom, 1.6));      // window shrinks → we dive into finer detail
+  const ww = vw * scale, wh = vh * scale;
+  const fx = clamp(lerp(.5, s.focus[0], Math.min(1, st.zoom * 1.4)), ww/2, 1 - ww/2), fy = clamp(lerp(.5, s.focus[1], Math.min(1, st.zoom * 1.4)), wh/2, 1 - wh/2);
+  gl.bindTexture(gl.TEXTURE_2D, s.tex);
+  const yw = yaw + (st.strain ? Math.sin(time * 40) * .004 * st.strain : 0);
+  if (!s.bio) {                                           // original colours, faded: shows what the work actually looks like
+    const ua = st.alpha * (UNDER - UNDER * .55 * Math.min(1, st.zoom));
+    if (ua > .003) {
+      bindQuad(); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+      gl.uniform4f(UU.uWin, fx - ww/2, fy - wh/2, ww, wh); gl.uniform2f(UU.uView, viewW, viewH); gl.uniform1f(UU.uDist, dist);
+      gl.uniform1f(UU.uYaw, yw); gl.uniform1f(UU.uPitch, pitch); gl.uniform1f(UU.uAlpha, ua); gl.uniform1i(UU.uTex, 0);
+      gl.drawArrays(gl.TRIANGLES, 0, 6);
+    }
+  }
+  bindParticles(); gl.blendFunc(gl.ONE, gl.ONE);
+  gl.uniform4f(U.uWin, fx - ww/2, fy - wh/2, ww, wh);
+  gl.uniform2f(U.uView, viewW, viewH);
+  gl.uniform1f(U.uZoom, st.zoom); gl.uniform1f(U.uTime, time);
+  gl.uniform1f(U.uInvert, s.invert ? 1 : 0);
+  gl.uniform1f(U.uDepth, .25 + st.zoom * 1.1);
+  gl.uniform1f(U.uDist, dist);
+  gl.uniform1f(U.uPt, dpr * (Math.min(innerWidth, innerHeight) < 700 ? 2.3 : 2.0) * (1 + st.zoom * .9));
+  gl.uniform1f(U.uYaw, yw); gl.uniform1f(U.uPitch, pitch);
+  gl.uniform1f(U.uAlpha, st.alpha); gl.uniform1f(U.uGain, s.bio ? 1.0 : 1.1 + st.zoom * .3);
+  gl.uniform1f(U.uDust, .015 + st.zoom * .045);
+  gl.drawArrays(gl.POINTS, 0, count);
+}
+function audioMix(p){
+  if (!ac) return;
+  SECTIONS.forEach((s, i) => {
+    if (!s.gainN) return;
+    const st = stateOf(i, p);
+    const g = st ? st.alpha * (.12 + .88 * Math.min(1, st.zoom)) * (s.gain || 1) : 0;
+    s.gainN.gain.setTargetAtTime(g, ac.currentTime, .12);
+    s.lp.frequency.setTargetAtTime(st ? 300 + Math.pow(Math.min(1.2, st.zoom), 2) * 14000 : 300, ac.currentTime, .12);
+  });
+}
+function frame(now){
+  const time = (now - t0) / 1000;
+  // spring back out of the hard zone if the visitor lets go
+  const k = Math.floor(target), l = target - k;
+  if (k < END && l > HARD0 && l < HARD1 && now - lastPush > 260) target = lerp(target, k + HARD0, .07);
+  if (ty === null && Math.abs(vel) > .0004) { push(vel); vel *= .92; }
+  pos = lerp(pos, target, reduce ? .3 : .085);
+  if (Math.abs(pos - target) < 1e-4) pos = target;
+  yaw = lerp(yaw, reduce ? 0 : yawT + Math.sin(time * .13) * .06, .04);
+  pitch = lerp(pitch, reduce ? 0 : pitchT + Math.cos(time * .11) * .04, .04);
+  if (gl) {
+    gl.clearColor(.012, .012, .016, 1); gl.clear(gl.COLOR_BUFFER_BIT);
+    SECTIONS.forEach((s, i) => {
+      if (s.end) return;
+      let st = stateOf(i, pos);
+      if (i === END - 1 && pos > END - 1 + HARD1) st = { alpha: .22, zoom: 1.2 };   // last work stays as a dim backdrop under the concept text
+      if (!st || st.alpha <= .001) return;
+      upload(s); track(s, now); drawSection(s, st, time);
+    });
+  }
+  hud(pos, now); audioMix(pos);
+  requestAnimationFrame(frame);
+}
+const at = parseFloat(new URLSearchParams(location.search).get('at'));   // ?at=3.2 jumps to a position (for previews)
+if (!isNaN(at)) { target = pos = clamp(at, 0, END); enter(false); }
+resize(); requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
